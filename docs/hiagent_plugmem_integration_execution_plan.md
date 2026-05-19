@@ -24,7 +24,18 @@
 - 不修改当前阶段未列出的文件，除非先说明原因。
 - 每阶段结束后输出：修改文件、diff 摘要、测试命令、风险点和未完成项。
 
-## 阶段 1：PlugMem API 修复与测试
+## 项目拆分与执行位置
+
+本计划分成两个独立项目执行：
+
+- PlugMem 项目：只执行阶段 1，在 PlugMem 独立仓库根目录操作和提交。
+- HiAgent 项目：执行阶段 2、阶段 3、阶段 4，在 HiAgent 仓库根目录操作和提交。
+
+不要在 HiAgent 仓库中提交复制版 `PlugMem/` 目录。阶段 2 之后的 HiAgent 联调依赖阶段 1 已经在 PlugMem 独立项目中完成并可启动服务。
+
+## PlugMem 项目：阶段 1 API 修复与测试
+
+执行位置：PlugMem 独立仓库根目录。
 
 ### 阶段目标
 
@@ -40,9 +51,9 @@ append(action_t0=action_2, observation_t1=obs_2)
 
 ### 允许修改的文件
 
-- `PlugMem/plugmem/api/schemas.py`
-- `PlugMem/plugmem/api/routes/memories.py`
-- `PlugMem/tests/test_api_memories.py`
+- `plugmem/api/schemas.py`
+- `plugmem/api/routes/memories.py`
+- `tests/test_api_memories.py`
 
 ### 禁止修改的内容
 
@@ -97,7 +108,6 @@ mem = Memory(
 ### 建议测试命令
 
 ```powershell
-cd PlugMem
 pytest tests/test_api_memories.py
 ```
 
@@ -109,7 +119,11 @@ pytest tests/test_api_memories.py
 fix(plugmem): support initial observation in trajectory API
 ```
 
-## 阶段 2：HiAgent 侧 PlugMem 接入
+## HiAgent 项目：阶段 2 PlugMem 接入
+
+执行位置：HiAgent 仓库根目录。
+
+前置条件：阶段 1 已在 PlugMem 独立项目中完成，PlugMem 服务端支持 `initial_observation`。
 
 ### 阶段目标
 
@@ -238,7 +252,9 @@ PY
 feat(hiagent): add plugmem-aware context agent
 ```
 
-## 阶段 3：PDDL 任务上传与配置
+## HiAgent 项目：阶段 3 PDDL 任务上传与配置
+
+执行位置：HiAgent 仓库根目录。
 
 ### 阶段目标
 
@@ -333,7 +349,11 @@ python agentboard/eval_main.py `
 feat(hiagent): upload pddl trajectories to plugmem
 ```
 
-## 阶段 4：Smoke test 与最小 ablation
+## HiAgent 项目：阶段 4 Smoke test 与最小 ablation
+
+执行位置：HiAgent 仓库根目录。
+
+前置条件：启动的 PlugMem 服务必须来自阶段 1 修复后的 PlugMem 项目版本。
 
 ### 阶段目标
 
