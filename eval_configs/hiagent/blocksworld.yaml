@@ -32,6 +32,18 @@ llm:
     max_retry_iters: 100
     stop: "\n\n"
     use_parser: False
+  qwen3_5_4b_vllm_server:
+    name: gpt
+    engine: qwen3_5_4b_vllm_server
+    context_length: 32768
+    use_azure: False
+    temperature: 0.
+    top_p: 1
+    retry_delays: 5
+    max_retry_iters: 3
+    max_tokens: 512
+    stop:
+    use_parser: False
   msal-gpt-4:
     name: msal-gpt
     engine: gpt-4-0125-preview
