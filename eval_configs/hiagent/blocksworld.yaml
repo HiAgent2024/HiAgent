@@ -12,6 +12,13 @@ agent:
   memory_size: 100
   need_goal: True
   use_parser: True
+  plugmem:
+    enabled: False
+    base_url: http://localhost:8080
+    api_key: dev-key-change-me
+    graph_id: hiagent-cross-task
+    recall_on_reset: True
+    upload_on_finish: True
 
 llm:
   gpt-4-turbo:
