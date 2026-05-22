@@ -49,6 +49,7 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
         self.plugmem_recall_on_reset = bool(self.plugmem_config.get("recall_on_reset", True))
         self.plugmem_upload_on_finish = bool(self.plugmem_config.get("upload_on_finish", True))
         self.plugmem_session_id = self.plugmem_config.get("session_id")
+        self.plugmem_recall_mode = self.plugmem_config.get("recall_mode", "reason")
         self.plugmem_context = ""
         self.plugmem_client = self._build_plugmem_client()
 
@@ -75,6 +76,7 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
                 goal=goal,
                 task_type=os.environ.get("EVALTASK", ""),
                 session_id=self.plugmem_session_id,
+                mode=self.plugmem_recall_mode,
             )
         except Exception as exc:
             self.plugmem_context = ""

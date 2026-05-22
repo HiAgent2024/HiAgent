@@ -19,6 +19,7 @@ class PlugMemClient:
         goal: Optional[str],
         task_type: str = "",
         session_id: Optional[str] = None,
+        mode: str = "reason",
     ) -> str:
         payload: Dict[str, Any] = {
             "observation": observation,
@@ -27,6 +28,8 @@ class PlugMemClient:
         }
         if session_id:
             payload["session_id"] = session_id
+        if mode == "recall_text":
+            return self._post_text(f"/api/v1/graphs/{self.graph_id}/recall_text", payload)
         data = self._post(f"/api/v1/graphs/{self.graph_id}/reason", payload)
         return data.get("reasoning", "")
 
@@ -48,6 +51,15 @@ class PlugMemClient:
         return self._post(f"/api/v1/graphs/{self.graph_id}/memories", payload)
 
     def _post(self, path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response_body = self._post_raw(path, payload)
+        if not response_body:
+            return {}
+        return json.loads(response_body)
+
+    def _post_text(self, path: str, payload: Dict[str, Any]) -> str:
+        return self._post_raw(path, payload).strip()
+
+    def _post_raw(self, path: str, payload: Dict[str, Any]) -> str:
         body = json.dumps(payload).encode("utf-8")
         req = request.Request(
             self.base_url + path,
@@ -60,13 +72,9 @@ class PlugMemClient:
         )
         try:
             with request.urlopen(req, timeout=self.timeout) as resp:
-                response_body = resp.read().decode("utf-8")
+                return resp.read().decode("utf-8")
         except error.HTTPError as exc:
             response_body = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"PlugMem request failed with HTTP {exc.code}: {response_body}") from exc
         except error.URLError as exc:
             raise RuntimeError(f"PlugMem request failed: {exc}") from exc
-
-        if not response_body:
-            return {}
-        return json.loads(response_body)
