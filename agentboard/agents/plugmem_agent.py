@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import redirect_stdout
+from io import StringIO
 from typing import Any, Dict, List, Optional
 
 from common.registry import registry
@@ -79,15 +81,17 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
             logger.warning("PlugMem recall failed: %s", exc)
 
     def make_prompt(self, need_goal=False, check_actions="check valid actions", check_inventory="inventory", system_message=''):
-        prompt = super().make_prompt(
-            need_goal=need_goal,
-            check_actions=check_actions,
-            check_inventory=check_inventory,
-            system_message=system_message,
-        )
-        if not self.plugmem_context:
-            return prompt
-        return self._inject_plugmem_context(prompt)
+        with redirect_stdout(StringIO()):
+            prompt = super().make_prompt(
+                need_goal=need_goal,
+                check_actions=check_actions,
+                check_inventory=check_inventory,
+                system_message=system_message,
+            )
+        if self.plugmem_context:
+            prompt = self._inject_plugmem_context(prompt)
+        print(f'------------[Prompt Start]-----------\n{prompt}\n----------[Prompt END]------------')
+        return prompt
 
     def _inject_plugmem_context(self, prompt: str) -> str:
         block = (
