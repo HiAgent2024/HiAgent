@@ -12,6 +12,13 @@ agent:
   memory_size: 100
   need_goal: True
   use_parser: True
+  plugmem:
+    enabled: False
+    base_url: http://localhost:8080
+    api_key: dev-key-change-me
+    graph_id: hiagent-cross-task
+    recall_on_reset: True
+    upload_on_finish: True
 
 llm:
   gpt-4-turbo:
@@ -24,6 +31,18 @@ llm:
     retry_delays: 20
     max_retry_iters: 100
     stop: "\n\n"
+    use_parser: False
+  qwen3_5_4b_vllm_server:
+    name: gpt
+    engine: qwen3_5_4b_vllm_server
+    context_length: 32768
+    use_azure: False
+    temperature: 0.
+    top_p: 1
+    retry_delays: 5
+    max_retry_iters: 3
+    max_tokens: 512
+    stop:
     use_parser: False
   msal-gpt-4:
     name: msal-gpt
