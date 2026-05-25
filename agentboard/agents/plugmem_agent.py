@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from contextlib import redirect_stdout
 from io import StringIO
 from typing import Any, Dict, List, Optional
@@ -50,6 +51,7 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
         self.plugmem_upload_on_finish = bool(self.plugmem_config.get("upload_on_finish", True))
         self.plugmem_session_id = self.plugmem_config.get("session_id")
         self.plugmem_recall_mode = self.plugmem_config.get("recall_mode", "reason")
+        self.plugmem_max_context_chars = int(self.plugmem_config.get("max_context_chars", 700))
         self.plugmem_context = ""
         self.plugmem_client = self._build_plugmem_client()
 
@@ -71,13 +73,14 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
         if not self.plugmem_enabled or not self.plugmem_recall_on_reset or self.plugmem_client is None:
             return
         try:
-            self.plugmem_context = self.plugmem_client.recall(
+            raw_context = self.plugmem_client.recall(
                 observation=init_obs,
                 goal=goal,
                 task_type=os.environ.get("EVALTASK", ""),
                 session_id=self.plugmem_session_id,
                 mode=self.plugmem_recall_mode,
             )
+            self.plugmem_context = self._filter_plugmem_context(raw_context)
         except Exception as exc:
             self.plugmem_context = ""
             logger.warning("PlugMem recall failed: %s", exc)
@@ -98,9 +101,10 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
     def _inject_plugmem_context(self, prompt: str) -> str:
         block = (
             "Past task hints:\n"
+            "Use these as general strategy hints only.\n"
+            "Do not copy concrete object names unless they also appear in the current observation.\n\n"
             f"{self.plugmem_context}\n\n"
-            "These hints come from previous tasks and may help with the current task.\n"
-            "Use relevant strategies and patterns when choosing the next Subgoal or Action.\n\n"
+            "These hints may help with the current task, but the current observation and goal are authoritative.\n\n"
         )
         marker = self._current_history_marker()
         if marker:
@@ -108,6 +112,36 @@ class PlugMemContextEfficientAgent(ContextEfficientAgentV2):
             if idx >= 0:
                 return prompt[:idx] + block + prompt[idx:]
         return block + prompt
+
+    def _filter_plugmem_context(self, text: str) -> str:
+        if not text:
+            return ""
+
+        context = str(text).strip()
+        final_marker = "### Final Information"
+        marker_idx = context.find(final_marker)
+        if marker_idx >= 0:
+            context = context[marker_idx + len(final_marker):]
+
+        lines = []
+        for line in context.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                lines.append("")
+                continue
+            if stripped in {"---", "### Reasoning", "### Final Information"}:
+                continue
+            lines.append(stripped)
+
+        context = "\n".join(lines)
+        context = re.sub(r"\n{3,}", "\n\n", context).strip()
+        if not context:
+            return ""
+
+        max_chars = max(0, self.plugmem_max_context_chars)
+        if max_chars and len(context) > max_chars:
+            context = context[:max_chars].rstrip()
+        return context
 
     def _current_history_marker(self) -> Optional[str]:
         history = getattr(self, "memory", [])[-self.memory_size:]
